@@ -1,9 +1,9 @@
 [package]
-name = "rust-aa-cli"
+name = "aa_rs_cli"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rand = "0.8.5"
+aa_rs = { path = "../aa_rs" }

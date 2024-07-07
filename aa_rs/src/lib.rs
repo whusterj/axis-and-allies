@@ -1,7 +1,23 @@
 use rand::Rng;
 use std::cmp::min;
-use std::env;
-use std::time::Instant;
+use std::time::{Duration, Instant};
+
+// TODO: Delete the following or replace with my own tests
+pub fn add(left: usize, right: usize) -> usize {
+    left + right
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn it_works() {
+        let result = add(2, 2);
+        assert_eq!(result, 4);
+    }
+}
+// END TODO
 
 enum UnitType {
     Infantry,
@@ -11,68 +27,69 @@ enum UnitType {
     Battleship,
 }
 
-struct Unit {
+pub struct Unit {
     unit_type: UnitType,
     ipc: u8,
     attack: u8,
     defend: u8,
 }
 
-const INFANTRY: Unit = Unit {
+pub const INFANTRY: Unit = Unit {
     unit_type: UnitType::Infantry,
     ipc: 3,
     attack: 1,
     defend: 2,
 };
 
-const TANK: Unit = Unit {
+pub const TANK: Unit = Unit {
     unit_type: UnitType::Tank,
     ipc: 6,
     attack: 3,
     defend: 3,
 };
 
-const FIGHTER: Unit = Unit {
+pub const FIGHTER: Unit = Unit {
     unit_type: UnitType::Fighter,
     ipc: 10,
     attack: 3,
     defend: 4,
 };
 
-const BOMBER: Unit = Unit {
+pub const BOMBER: Unit = Unit {
     unit_type: UnitType::Bomber,
     ipc: 12,
     attack: 4,
     defend: 1,
 };
 
-const BATTLESHIP: Unit = Unit {
+pub const BATTLESHIP: Unit = Unit {
     unit_type: UnitType::Battleship,
     ipc: 24,
     attack: 4,
     defend: 4,
 };
 
+pub struct SimulationResult {
+    pub attacker_wins: u32,
+    pub defender_wins: u32,
+    pub draws: u32,
+    pub duration: Duration,
+}
+
 fn rand_between(min: u8, max: u8) -> u8 {
     let mut rng = rand::thread_rng();
     rng.gen_range(min..=max)
 }
 
-fn main() {
-    let args: Vec<String> = env::args().collect();
-
-    // Ensure there are at least two arguments provided
-    if args.len() < 4 {
-        eprintln!("Usage: {} <attacker_units> <defender_units>", args[0]);
-        std::process::exit(1);
-    }
-
-    let attacker_units = create_units_vector(&args[1]);
-    let defender_units = create_units_vector(&args[2]);
-    let sim_count = args[3].parse::<u32>().unwrap();
-
-    print_units(&attacker_units, "Attacker");
-    print_units(&defender_units, "Defender");
+pub fn simulate(
+    mut attacker_units: Vec<&Unit>,
+    mut defender_units: Vec<&Unit>,
+    sim_count: u32,
+) -> SimulationResult {
+    // Sort units by IPC value in ascending order. This ensures that
+    // the least valuable units are the first to be taken as casualties.
+    attacker_units.sort_by_key(|unit| unit.ipc);
+    defender_units.sort_by_key(|unit| unit.ipc);
 
     let start_time = Instant::now();
 
@@ -84,9 +101,7 @@ fn main() {
         let mut a_casualties = 0;
         let mut d_casualties = 0;
         while !done {
-            // Roll for each attacking unit, and
-            // tally new defender casualties -- these
-            // are not applied until the end of the round.
+            // Roll for each attacking unit that is not a casualty.
             let mut new_d_casualties = 0;
             for i in a_casualties..attacker_units.len() {
                 let roll = rand_between(1, 6);
@@ -96,8 +111,7 @@ fn main() {
                 }
             }
 
-            // Roll for each defending unit and
-            // immediately take attacker casualties
+            // Roll for each defending unit that is not a casualty.
             let mut new_a_casualties = 0;
             for i in d_casualties..defender_units.len() {
                 let roll = rand_between(1, 6);
@@ -128,15 +142,15 @@ fn main() {
     let end_time = Instant::now();
     let duration = end_time - start_time;
 
-    println!("--- Results ---");
-    println!("Execution time: {:?}", duration);
-    println!("Attacker Wins: {}", a_wins);
-    println!("Defender Wins: {}", d_wins);
-    println!("Draws: {}", draws);
-    println!("Win Ratio: {:.2}", a_wins as f32 / sim_count as f32);
+    return SimulationResult {
+        attacker_wins: a_wins,
+        defender_wins: d_wins,
+        draws: draws,
+        duration: duration,
+    };
 }
 
-fn create_units_vector(input: &str) -> Vec<&Unit> {
+pub fn create_units_vector(input: &str) -> Vec<&Unit> {
     let mut units: Vec<&Unit> = Vec::new();
     for c in input.chars() {
         match c {
@@ -151,7 +165,7 @@ fn create_units_vector(input: &str) -> Vec<&Unit> {
     units
 }
 
-fn print_units(units: &Vec<&Unit>, side: &str) {
+pub fn print_units(units: &Vec<&Unit>, side: &str) {
     println!("{} Units:", side);
     for unit in units {
         match unit.unit_type {
